@@ -1,25 +1,32 @@
-# Gaussian Plume Model - Gas Dispersion Calculator
 import numpy as np
 import matplotlib.pyplot as plt
 
-print("=== Gas Leak Dispersion Model ===")
-Q = float(input("Enter emission rate (g/s): "))
-u = float(input("Enter wind speed (m/s): "))
-# Dispersion coefficients (Pasquill-Gifford stability class D)
-sy = 0.08  # horizontal spread
-sz = 0.06  # vertical spread
+# Parameters
+Q = 50.0       # Emission rate (g/s)
+u = 5.0        # Wind speed (m/s)
+H = 10.0       # Stack height (m)
 
-x = np.linspace(1, 1000, 500)  # distance 1m to 1000m
+# Distance array (m)
+x = np.linspace(10, 1000, 500) 
 
-sigma_y = sy * x
-sigma_z = sz * x
+# Briggs Dispersion Coefficients (Class D - Neutral, Open Country)
+# sigma = a * x / (1 + b*x)**c (Simplified version below)
+sigma_y = 0.08 * x * (1 + 0.0001 * x)**(-0.5)
+sigma_z = 0.06 * x * (1 + 0.0015 * x)**(-0.5)
 
-# Concentration at ground level (z=0, y=0)
-C = (Q / (2 * np.pi * u * sigma_y * sigma_z)) * 1e6  # in micrograms/m3
+# Gaussian Plume Equation for ground-level centerline (y=0, z=0)
+# Including ground reflection term: 2 * exp(-H^2 / (2 * sigma_z^2))
+term1 = Q / (np.pi * u * sigma_y * sigma_z)
+term2 = np.exp(-0.5 * (H / sigma_z)**2)
+C = term1 * term2 * 1e6  # Convert to µg/m³
+
+# Plotting
 plt.figure(figsize=(10, 5))
-plt.plot(x, C)
-plt.xlabel("Distance from source (m)")
+plt.plot(x, C, label=f"Source H={H}m", color='blue', linewidth=2)
+
+plt.title("Ground Level Concentration (Centerline)")
+plt.xlabel("Distance Downwind (m)")
 plt.ylabel("Concentration (µg/m³)")
-plt.title(f"Gas Dispersion Plume\nEmission Rate: {Q} g/s | Wind Speed: {u} m/s")
-plt.grid(True)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend()
 plt.show()
